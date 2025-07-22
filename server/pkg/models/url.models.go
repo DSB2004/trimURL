@@ -3,7 +3,9 @@ package models
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
+	"time"
 	"url_shortener/pkg/config"
 
 	"github.com/google/uuid"
@@ -26,8 +28,20 @@ func (url *URL) Save(ctx context.Context)(string,error){
 	if(url.Id==uuid.Nil){
 		url.Id=uuid.New()
 	}
+	if url.ExpireIn != "" {
+		expireTime, err := time.Parse("2006-01-02T15:04:05Z07:00", url.ExpireIn)
+		if err != nil {
+			return "", fmt.Errorf("invalid expiration time format: %v", err)
+		}
+		expireDuration := time.Until(expireTime)
+		if expireDuration <= 0 {
+			return "", fmt.Errorf("expiration time must be in the future")
+		}
 
-	err = redis.Set(ctx, url.Id.String(), data, 0).Err()
+		err = redis.Set(ctx, url.Id.String(), data, expireDuration).Err()
+	} else {
+		err = redis.Set(ctx, url.Id.String(), data, 24*time.Hour).Err()
+	}
 	if err!=nil{
 		return "", err 
 	}
