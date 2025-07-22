@@ -1,0 +1,11 @@
+# IDE config
+
+.vscode
+
+# env file
+.env.prod
+.env
+
+
+# build 
+tmp
